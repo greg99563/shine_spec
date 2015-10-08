@@ -1,0 +1,181 @@
+shine_development=> \d states
+                              Table "public.states"
+ Column |       Type        |                      Modifiers                      
+--------+-------------------+-----------------------------------------------------
+ id     | integer           | not null default nextval('states_id_seq'::regclass)
+ code   | character varying | not null
+ name   | character varying | not null
+Indexes:
+    "states_pkey" PRIMARY KEY, btree (id)
+
+shine_development=> \d customers_billing_addresses;
+                            Table "public.customers_billing_addresses"
+   Column    |  Type   |                                Modifiers                                 
+-------------+---------+--------------------------------------------------------------------------
+ id          | integer | not null default nextval('customers_billing_addresses_id_seq'::regclass)
+ customer_id | integer | not null
+ address_id  | integer | not null
+Indexes:
+    "customers_billing_addresses_pkey" PRIMARY KEY, btree (id)
+    "customers_billing_addresses_customer_id" UNIQUE, btree (customer_id)
+
+shine_development=> \d customers_shipping_addresses
+                            Table "public.customers_shipping_addresses"
+   Column    |  Type   |                                 Modifiers                                 
+-------------+---------+---------------------------------------------------------------------------
+ id          | integer | not null default nextval('customers_shipping_addresses_id_seq'::regclass)
+ customer_id | integer | not null
+ address_id  | integer | not null                                                                 
+ primary     | boolean | not null default false                                                   
+Indexes:                                                                                          
+    "customers_shipping_addresses_pkey" PRIMARY KEY, btree (id)                                   
+    "customers_shipping_addresses_customer_id" btree (customer_id)                                
+                                                                                                  
+shine_development=> \d customer_details
+          Materialized view "public.customer_details"                                             
+       Column        |            Type             | Modifiers                                    
+---------------------+-----------------------------+-----------                                   
+ customer_id         | integer                     |                                              
+ first_name          | character varying           |                                              
+ last_name           | character varying           |                                              
+ email               | character varying           |                                              
+ username            | character varying           |                                              
+ joined_at           | timestamp without time zone |                                              
+ billing_address_id  | integer                     |                                              
+ billing_street      | character varying           |                                              
+ billing_city        | character varying           |                                              
+ billing_state       | character varying           |                                              
+ billing_zipcode     | character varying           |                                              
+ shipping_address_id | integer                     |                                              
+ shipping_street     | character varying           |                                              
+ shipping_city       | character varying           |                                              
+ shipping_state      | character varying           |                                              
+ shipping_zipcode    | character varying           |                                              
+Indexes:                                                                                          
+    "customer_details_customer_id" UNIQUE, btree (customer_id)
+
+shine_development=> \i xplain_ch10p180.sql         [[ http://explain.depesz.com/s/7fM6 ]]
+                                                                                                QUERY PLAN                                                                                                 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=2.41..42.63 rows=1 width=163) (actual time=120.929..120.940 rows=1 loops=1)
+   ->  Nested Loop  (cost=2.27..42.46 rows=1 width=164) (actual time=120.923..120.932 rows=1 loops=1)
+         ->  Nested Loop  (cost=1.84..34.01 rows=1 width=121) (actual time=120.902..120.910 rows=1 loops=1)
+               ->  Nested Loop  (cost=1.41..25.52 rows=1 width=117) (actual time=99.205..99.210 rows=1 loops=1)
+                     ->  Nested Loop  (cost=1.27..25.35 rows=1 width=118) (actual time=99.189..99.192 rows=1 loops=1)
+                           ->  Nested Loop  (cost=0.84..16.89 rows=1 width=75) (actual time=76.332..76.334 rows=1 loops=1)
+                                 ->  Index Scan using customers_pkey on customers  (cost=0.42..8.44 rows=1 width=71) (actual time=54.982..54.982 rows=1 loops=1)
+                                       Index Cond: (id = 2000)
+                                 ->  Index Scan using customers_billing_addresses_customer_id on customers_billing_addresses  (cost=0.42..8.44 rows=1 width=8) (actual time=21.343..21.343 rows=1 loops=1)
+                                       Index Cond: (customer_id = 2000)
+                           ->  Index Scan using addresses_pkey on addresses billing_address  (cost=0.43..8.45 rows=1 width=47) (actual time=22.849..22.849 rows=1 loops=1)
+                                 Index Cond: (id = customers_billing_addresses.address_id)
+                     ->  Index Scan using states_pkey on states billing_state  (cost=0.14..0.16 rows=1 width=7) (actual time=0.010..0.010 rows=1 loops=1)
+                           Index Cond: (id = billing_address.state_id)
+               ->  Index Scan using customers_shipping_addresses_customer_id on customers_shipping_addresses  (cost=0.42..8.48 rows=1 width=8) (actual time=21.694..21.697 rows=1 loops=1)
+                     Index Cond: (customer_id = 2000)
+                     Filter: "primary"
+                     Rows Removed by Filter: 3
+         ->  Index Scan using addresses_pkey on addresses shipping_address  (cost=0.43..8.45 rows=1 width=47) (actual time=0.015..0.016 rows=1 loops=1)
+               Index Cond: (id = customers_shipping_addresses.address_id)
+   ->  Index Scan using states_pkey on states shipping_state  (cost=0.14..0.16 rows=1 width=7) (actual time=0.003..0.004 rows=1 loops=1)
+         Index Cond: (id = shipping_address.state_id)
+ Planning time: 241.616 ms
+ Execution time: 121.223 ms
+(24 rows)
+
+shine_development=> \i xplain_ch10p180.sql         [[ http://explain.depesz.com/s/dWwM ]]
+                                                                                               QUERY PLAN                                                                                                
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=2.41..42.63 rows=1 width=163) (actual time=0.078..0.090 rows=1 loops=1)
+   ->  Nested Loop  (cost=2.27..42.46 rows=1 width=164) (actual time=0.073..0.083 rows=1 loops=1)
+         ->  Nested Loop  (cost=1.84..34.01 rows=1 width=121) (actual time=0.066..0.075 rows=1 loops=1)
+               ->  Nested Loop  (cost=1.41..25.52 rows=1 width=117) (actual time=0.054..0.058 rows=1 loops=1)
+                     ->  Nested Loop  (cost=1.27..25.35 rows=1 width=118) (actual time=0.049..0.052 rows=1 loops=1)
+                           ->  Nested Loop  (cost=0.84..16.89 rows=1 width=75) (actual time=0.036..0.037 rows=1 loops=1)
+                                 ->  Index Scan using customers_pkey on customers  (cost=0.42..8.44 rows=1 width=71) (actual time=0.019..0.019 rows=1 loops=1)
+                                       Index Cond: (id = 2000)
+                                 ->  Index Scan using customers_billing_addresses_customer_id on customers_billing_addresses  (cost=0.42..8.44 rows=1 width=8) (actual time=0.011..0.012 rows=1 loops=1)
+                                       Index Cond: (customer_id = 2000)
+                           ->  Index Scan using addresses_pkey on addresses billing_address  (cost=0.43..8.45 rows=1 width=47) (actual time=0.010..0.011 rows=1 loops=1)
+                                 Index Cond: (id = customers_billing_addresses.address_id)
+                     ->  Index Scan using states_pkey on states billing_state  (cost=0.14..0.16 rows=1 width=7) (actual time=0.004..0.004 rows=1 loops=1)
+                           Index Cond: (id = billing_address.state_id)
+               ->  Index Scan using customers_shipping_addresses_customer_id on customers_shipping_addresses  (cost=0.42..8.48 rows=1 width=8) (actual time=0.011..0.015 rows=1 loops=1)
+                     Index Cond: (customer_id = 2000)
+                     Filter: "primary"
+                     Rows Removed by Filter: 3
+         ->  Index Scan using addresses_pkey on addresses shipping_address  (cost=0.43..8.45 rows=1 width=47) (actual time=0.006..0.007 rows=1 loops=1)
+               Index Cond: (id = customers_shipping_addresses.address_id)
+   ->  Index Scan using states_pkey on states shipping_state  (cost=0.14..0.16 rows=1 width=7) (actual time=0.003..0.005 rows=1 loops=1)
+         Index Cond: (id = shipping_address.state_id)
+ Planning time: 2.196 ms
+ Execution time: 0.317 ms
+(24 rows)
+
+shine_development=> DROP INDEX customers_billing_addresses_customer_id;
+DROP INDEX
+shine_development=> DROP INDEX customers_shipping_addresses_customer_id;
+DROP INDEX
+shine_development=> \i xplain_ch10p180.sql         [[ http://explain.depesz.com/s/PT7d ]]
+                                                                               QUERY PLAN                                                                                
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=1.28..21979.51 rows=1 width=163) (actual time=144.175..562.047 rows=1 loops=1)
+   Join Filter: (shipping_address.state_id = shipping_state.id)
+   Rows Removed by Join Filter: 50
+   ->  Nested Loop  (cost=1.28..21977.36 rows=1 width=164) (actual time=144.136..561.995 rows=1 loops=1)
+         ->  Nested Loop  (cost=0.85..21968.90 rows=1 width=121) (actual time=144.113..561.969 rows=1 loops=1)
+               ->  Nested Loop  (cost=0.85..6286.06 rows=1 width=117) (actual time=102.278..251.615 rows=1 loops=1)
+                     Join Filter: (billing_address.state_id = billing_state.id)
+                     Rows Removed by Join Filter: 50
+                     ->  Nested Loop  (cost=0.85..6283.91 rows=1 width=118) (actual time=102.236..251.564 rows=1 loops=1)
+                           ->  Nested Loop  (cost=0.42..6275.45 rows=1 width=75) (actual time=102.197..251.521 rows=1 loops=1)
+                                 ->  Index Scan using customers_pkey on customers  (cost=0.42..8.44 rows=1 width=71) (actual time=0.017..0.020 rows=1 loops=1)
+                                       Index Cond: (id = 2000)
+                                 ->  Seq Scan on customers_billing_addresses  (cost=0.00..6267.00 rows=1 width=8) (actual time=102.170..251.489 rows=1 loops=1)
+                                       Filter: (customer_id = 2000)
+                                       Rows Removed by Filter: 349999
+                           ->  Index Scan using addresses_pkey on addresses billing_address  (cost=0.43..8.45 rows=1 width=47) (actual time=0.026..0.029 rows=1 loops=1)
+                                 Index Cond: (id = customers_billing_addresses.address_id)
+                     ->  Seq Scan on states billing_state  (cost=0.00..1.51 rows=51 width=7) (actual time=0.006..0.013 rows=51 loops=1)
+               ->  Seq Scan on customers_shipping_addresses  (cost=0.00..15682.84 rows=1 width=8) (actual time=41.831..310.348 rows=1 loops=1)
+                     Filter: ("primary" AND (customer_id = 2000))
+                     Rows Removed by Filter: 875826
+         ->  Index Scan using addresses_pkey on addresses shipping_address  (cost=0.43..8.45 rows=1 width=47) (actual time=0.015..0.017 rows=1 loops=1)
+               Index Cond: (id = customers_shipping_addresses.address_id)
+   ->  Seq Scan on states shipping_state  (cost=0.00..1.51 rows=51 width=7) (actual time=0.005..0.015 rows=51 loops=1)
+ Planning time: 2.239 ms
+ Execution time: 562.269 ms
+(26 rows)
+
+shine_development=> \i xplain_ch10p180.sql         [[ http://explain.depesz.com/s/t5qX ]]
+                                                                               QUERY PLAN                                                                                
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=1.28..21979.51 rows=1 width=163) (actual time=2.794..180.772 rows=1 loops=1)
+   Join Filter: (shipping_address.state_id = shipping_state.id)
+   Rows Removed by Join Filter: 50
+   ->  Nested Loop  (cost=1.28..21977.36 rows=1 width=164) (actual time=2.761..180.724 rows=1 loops=1)
+         ->  Nested Loop  (cost=0.85..21968.90 rows=1 width=121) (actual time=2.744..180.705 rows=1 loops=1)
+               ->  Nested Loop  (cost=0.85..6286.06 rows=1 width=117) (actual time=0.706..34.251 rows=1 loops=1)
+                     Join Filter: (billing_address.state_id = billing_state.id)
+                     Rows Removed by Join Filter: 50
+                     ->  Nested Loop  (cost=0.85..6283.91 rows=1 width=118) (actual time=0.674..34.213 rows=1 loops=1)
+                           ->  Nested Loop  (cost=0.42..6275.45 rows=1 width=75) (actual time=0.658..34.193 rows=1 loops=1)
+                                 ->  Index Scan using customers_pkey on customers  (cost=0.42..8.44 rows=1 width=71) (actual time=0.019..0.022 rows=1 loops=1)
+                                       Index Cond: (id = 2000)
+                                 ->  Seq Scan on customers_billing_addresses  (cost=0.00..6267.00 rows=1 width=8) (actual time=0.633..34.165 rows=1 loops=1)
+                                       Filter: (customer_id = 2000)
+                                       Rows Removed by Filter: 349999
+                           ->  Index Scan using addresses_pkey on addresses billing_address  (cost=0.43..8.45 rows=1 width=47) (actual time=0.012..0.015 rows=1 loops=1)
+                                 Index Cond: (id = customers_billing_addresses.address_id)
+                     ->  Seq Scan on states billing_state  (cost=0.00..1.51 rows=51 width=7) (actual time=0.005..0.011 rows=51 loops=1)
+               ->  Seq Scan on customers_shipping_addresses  (cost=0.00..15682.84 rows=1 width=8) (actual time=2.034..146.449 rows=1 loops=1)
+                     Filter: ("primary" AND (customer_id = 2000))
+                     Rows Removed by Filter: 875826
+         ->  Index Scan using addresses_pkey on addresses shipping_address  (cost=0.43..8.45 rows=1 width=47) (actual time=0.012..0.014 rows=1 loops=1)
+               Index Cond: (id = customers_shipping_addresses.address_id)
+   ->  Seq Scan on states shipping_state  (cost=0.00..1.51 rows=51 width=7) (actual time=0.004..0.014 rows=51 loops=1)
+ Planning time: 2.152 ms
+ Execution time: 180.978 ms
+(26 rows)
+
+shine_development=> 
